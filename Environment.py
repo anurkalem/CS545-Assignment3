@@ -19,12 +19,14 @@ The class variables you CAN use for reward calculation and state definition:
 -self.left_paddle
 -self.right_paddle
 -self.ball
+
 -self.left_point
 -self.right_point
 
 All other variables are intended for internal structure. If you think any other parameter from the environment is needed,
 contact your TA about it.
 """
+
 
 class PongEnvironment:
     def __init__(self, drawable=True):
@@ -36,14 +38,14 @@ class PongEnvironment:
         self.window = pygame.display.set_mode((parameters.WINDOW_WIDTH, parameters.WINDOW_HEIGHT))
         paddle_l_strategy = SimpleAIStrategy()
         self.left_paddle = Paddle(parameters.PADDLE_1_X, parameters.PADDLE_1_Y, parameters.PADDLE_1_WIDTH,
-                      parameters.PADDLE_1_HEIGHT,
-                      parameters.PADDLE_1_V, parameters.PADDLE_1_COLOR, paddle_l_strategy, self.window,
-                      image_name=parameters.PLAYER_1_IMAGE, paddle_type="L")
+                                  parameters.PADDLE_1_HEIGHT,
+                                  parameters.PADDLE_1_V, parameters.PADDLE_1_COLOR, paddle_l_strategy, self.window,
+                                  image_name=parameters.PLAYER_1_IMAGE, paddle_type="L")
         paddle_r_strategy = ReinforcementLearningStrategy()
         self.right_paddle = Paddle(parameters.PADDLE_2_X, parameters.PADDLE_2_Y, parameters.PADDLE_2_WIDTH,
-                      parameters.PADDLE_2_HEIGHT,
-                      parameters.PADDLE_2_V, parameters.PADDLE_2_COLOR, paddle_r_strategy, self.window,
-                      image_name=parameters.PLAYER_2_IMAGE, paddle_type="R")
+                                   parameters.PADDLE_2_HEIGHT,
+                                   parameters.PADDLE_2_V, parameters.PADDLE_2_COLOR, paddle_r_strategy, self.window,
+                                   image_name=parameters.PLAYER_2_IMAGE, paddle_type="R")
         self.collusion_strategy = PositionCollusionStrategy(self.left_paddle, self.right_paddle)
         self.ball = Ball(self.collusion_strategy, self.window)
         paddle_l_strategy.set_ball(self.ball)
@@ -84,12 +86,15 @@ class PongEnvironment:
     def reset(self):
         self.done = False
         self.ball.reset()
+
         for e in self.paddles:
             e.reset()
+
         return self.observe()
 
     def move(self, action):
         self.ball.move()
+
         for e in self.paddles:
             e.move(action)
 
@@ -102,8 +107,10 @@ class PongEnvironment:
             obs_prime = self.observe()
             rew = self.get_reward(action, prev_observed, obs_prime, res)
             obs = np.array(obs_prime)
+
             if res != 0:
                 self.done = True
+
             return obs, rew, self.done
         else:
             print("You are trying send an action to a finished episode!")
@@ -116,8 +123,7 @@ class PongEnvironment:
             self.left_point += 1
 
     def observe(self):
-        pass
+        return np.array([self.ball.y, self.right_paddle.y + (self.right_paddle.h / 2)])
 
     def get_reward(self, action, prev_state, next_state, res):
-        # if res is -1, RL agent wins, if res is 1, opponent wins, else, game is still going on
-        pass
+        return (self.right_paddle.h / 2) - abs((self.right_paddle.h / 2) + self.right_paddle.y - self.ball.y)
