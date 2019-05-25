@@ -1,8 +1,8 @@
 import numpy as np
 
+from keras import backend as K
 from keras.models import Model
 from keras.layers import Input, Dense
-from keras import backend as K
 from keras.optimizers import Adam
 
 from Environment import PongEnvironment
@@ -101,20 +101,21 @@ class Agent:
 
             obs = next_obs
 
-            self.environment.render()
+            if episode % 50 == 0:
+                self.environment.render()
 
             if is_done:
-                total_rewards = np.sum(R)
                 self.transform_rewards(R)
+                total_rewards = np.sum(R)
 
                 print("Total reward is {} in episode {}".format(total_rewards, episode))
 
                 break
 
-        obs, action, pred, reward = np.array(S), np.array(A), np.array(P), np.reshape(np.array(R), (len(R), 1))
+        obs, action, reward, pred = np.array(S), np.array(A), np.reshape(np.array(R), (len(R), 1)), np.array(P)
         pred = np.reshape(pred, (pred.shape[0], pred.shape[2]))
 
-        return obs, action, pred, reward
+        return obs, action, reward, pred
 
     def transform_rewards(self, rewards):
         for i in range(len(rewards) - 1, 0, -1):
@@ -123,7 +124,7 @@ class Agent:
     def run(self):
         for episode in range(EPISODE_COUNT):
             # Get batch from environment
-            obs, actions, predictions, rewards = self.get_batch(episode)
+            obs, actions, rewards, predictions = self.get_batch(episode)
             batch_size = len(obs)
 
             # Calculate advantage function
@@ -134,9 +135,11 @@ class Agent:
             self.actor.fit([obs, advantage_values, predictions], [actions], batch_size=batch_size, shuffle=True, epochs=10, verbose=False)
             self.critic.fit([obs], [rewards], batch_size=batch_size, shuffle=True, epochs=10, verbose=False)
 
+            # Save actor parameters when convergence
+            if episode % 5 == 0:
+                self.actor.save_weights("PongModel.h5", True)
+
 
 if __name__ == '__main__':
-    env = PongEnvironment(True)
-
-    agent = Agent(env)
+    agent = Agent(PongEnvironment(True))
     agent.run()
